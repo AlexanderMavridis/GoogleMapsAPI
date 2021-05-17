@@ -1,0 +1,113 @@
+﻿
+<div>
+    <table id="AttributesTable" class="table table-bordered">
+        <tr>
+            <th>Attribute Name</th>
+            <th>Attribute Value</th>
+        </tr>
+    </table>
+</div>
+<br />
+
+<div id="employeesHeading" style="display:none"><h4><b>Related Employees</b></h4></div>
+
+<div>
+    <table id="EmployyesTable" class="table table-bordered" style="display:none">
+    </table>
+</div>
+
+
+@section scripts{
+    <script>
+
+        $(document).ready(function () {
+
+            var attributesTable = $("#AttributesTable");
+            var employeesTable = $("#EmployyesTable");
+            var employeesHeading = $("#employeesHeading");
+            var chosenAttrId;
+            var arrayOfEmployees;
+
+            $.ajax({
+                type: "Get",
+                url: "/api/Attributes",
+                dataType: "json"
+
+            })
+                .done(function (response) {
+                    for (var attribute of response) {
+                        let template = `<tr>
+                                            <td>${attribute.attrName}</td>
+                                            <td>${attribute.attrValue}</td>
+                                            <td><button class="chosenAttribute btn btn-success" value="${attribute.attrId}">Choose</button>
+                                            </tr>`;
+                        attributesTable.append(template);
+                    }
+                })
+
+                .fail(function () {
+                    console.log("failed to load attributes");
+                });
+
+
+            $(document).on("click", '.chosenAttribute', function () {
+                employeesHeading.show();
+                employeesTable.show().empty();
+
+                chosenAttrId = $(this).val();
+
+                //no2 solution
+                arrayOfEmployees = [];
+
+                $.ajax({
+                    type: "Get",
+                    url: `/api/Employees/getRelatedData/${chosenAttrId}`,
+                    dataType: "json",
+                    success: function (response) {
+                        if (response.length == 0) {
+                            employeesTable.append(`<tr><td><h5>There is no employee with this attribute!</h5></td></tr>`);
+                        }
+                        else {
+                            for (var employee of response) {
+                                let template2 = `<tr>
+                                                     <td>${employee.empName}</td>
+                                                     <td><button class="chosenEmployee btn btn-primary" value="${employee.empId}">Choose</button>`
+                                employeesTable.append(template2);
+                                let tempObj2 = {
+                                    coords: { lat: `${employee.residenceLat}`, lng: `${employee.residenceLng}` },
+                                    content: `<h1>${employee.empName}</h1>`
+                                }
+                                console.log(tempObj2);
+                                arrayOfEmployees.push(tempObj2);
+                            }
+                        }
+
+                    }
+                });
+            });
+
+            //1st approach for sending data to maps
+            //$(document).on("click", '.chosenEmployee', function () {
+            //    var employeeId = $(this).val();
+            //    let answer = confirm("Are you sure?");
+            //    if (answer) {
+            //        sessionStorage.setItem("attributeId", chosenAttrId);
+            //        sessionStorage.setItem("employeeId", employeeId);
+            //        window.location.assign('TestingMap');
+            //    }
+            //});
+
+            //2nd aproach
+            $(document).on("click", '.chosenEmployee', function () {
+                var employeeId = $(this).val();
+                let answer = confirm("Are you sure?");
+                if (answer) {
+                    sessionStorage.setItem("employees", arrayOfEmployees);    
+                    window.location.assign('TestingMap');
+                }
+            });
+
+        });
+
+    </script>
+}

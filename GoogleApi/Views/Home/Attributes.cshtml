@@ -1,0 +1,90 @@
+﻿@{
+    ViewData["Title"] = "Attributes List";
+}
+
+<h3>Attributes list</h3>
+
+<div>
+    <input id="showAttributes" class="btn btn-link" type="button" value="Click here to see Attributes" />
+</div>
+
+<div>
+    <table id="AttributesTable" class="table table-bordered">
+        <tr>
+            <th>Attribute Name</th>
+            <th>Attribute Value</th>
+        </tr>
+    </table>
+</div>
+
+<a href="createAttribute" class="btn btn-primary">Add</a>
+
+@section scripts {
+    <script>
+
+        $(document).ready(function () {
+
+            var table = $("#AttributesTable");
+            var button = $("#showAttributes");
+
+            button.click(function () {
+                if ($(this).val() == "Click here to see Attributes") {
+                    $.ajax({
+                        type: "Get",
+                        url: "/api/Attributes",
+                        dataType: "json",
+                        success: function (response) {
+                            for (var attribute of response) {
+                                let template = `<tr>
+                                                <td>${attribute.attrName}</td>
+                                                <td>${attribute.attrValue}</td>
+                                                <td><button class="updateAttribute btn btn-info" value="${attribute.attrId}">Update</button>
+                                                <button class="deleteAttribute btn btn-danger" value="${attribute.attrId}">Delete</button></td>
+                                                </tr>`;
+                                table.append(template);
+                            }
+                            console.log("inside ajax");
+                        }
+                    });
+
+                    $(this).val("Dont Click again");
+                }
+                else {
+                    window.location.replace("/home/attributes");
+                    alert("You cannot used it twice");
+                    $(this).val("Click here to see Attributes");
+                }
+            });
+
+            $(document).on("click", '.deleteAttribute', function () {
+                let attrName = $(this).parent().parent().find("td:first").text();
+                var confirmation = confirm(`Are you sure you want to delete attribute with name ${attrName}?`);
+                if (confirmation) {
+                    var idToDelete = $(this).val();
+                    var td = $(this).parent();
+                    $.ajax({
+                        type: "DELETE",
+                        url: `/api/Attributes/deleteAttribute/${idToDelete}`
+                    })
+                        .done(function () {
+                            console.log("Delete done");
+                            let row = td.parent();
+                            row.remove();
+                        })
+                        .fail(function () {
+                            console.log("Delete failed");
+                        });
+                }
+            });
+
+            $(document).on("click", '.updateAttribute', function () {
+                let attributeId = $(this).val();
+                let url = `attributedetails`;                                    //   thought it needs `home/attributedetails`
+                sessionStorage.setItem('attributeId', attributeId);
+                window.location.assign(url);
+            });
+
+        })
+
+    </script>
+}

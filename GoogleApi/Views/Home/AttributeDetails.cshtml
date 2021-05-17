@@ -1,0 +1,74 @@
+﻿@{
+    ViewData["Title"] = "Update Attribute";
+}
+
+
+<form id="newAttribute">
+    <div class="form-group">
+        <label for="attrName">Attribute name:</label>
+        <input type="text" id="attrName" name="attrName" value="">
+    </div>
+
+    <div class="form-group">
+        <label for="attrValue">Attribute value:</label>
+        <input type="text" id="attrValue" name="attrValue" value="">
+    </div>
+
+    <input type="hidden" id="attrId" name="attrId" value="">
+
+    <button class="btn btn-success">Save</button>
+</form>
+
+
+
+@section scripts{
+    <script>
+
+        $(document).ready(function () {
+            var attrId = sessionStorage.getItem("attributeId");
+            sessionStorage.removeItem("attributeId");
+
+            var attributeName = $("#attrName");
+            var attributeValue = $("#attrValue");
+            var attributeId = $("#attrId");
+
+            $.ajax({
+                type: "Get",
+                url: `/api/Attributes/${attrId}`,
+                dataType: "json",
+                success: function (response) {
+                    console.log(response.attrName);
+                    attributeName.val(response.attrName);
+                    attributeValue.val(response.attrValue);
+                    attributeId.val(response.attrId);
+                }
+            });
+
+            let attributeModel = {};
+            // update
+            $("#newAttribute").submit(function (e) {
+                e.preventDefault();
+
+                attributeModel.attrId = attributeId.val();
+                attributeModel.attrName = attributeName.val();
+                attributeModel.attrValue = attributeValue.val();
+
+                $.ajax({
+                    type: "PUT",
+                    url: `/api/Attributes/updateAttribute/${attributeId.val()}`,
+                    headers: { 'Content-Type': 'application/json' },
+                    data: JSON.stringify(attributeModel)
+                })
+                    .done(function () {
+                        console.log("Update done");
+                        window.location.assign("attributes");
+                    })
+                    .fail(function () {
+                        console.log("Update failed");  // need validation (everywhere)
+                        console.log(attributeModel);
+                    });
+            });
+        });
+
+    </script>
+}

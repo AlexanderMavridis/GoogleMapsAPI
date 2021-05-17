@@ -1,0 +1,90 @@
+﻿@{
+    ViewData["Title"] = "Employee List";
+}
+
+<h3>Employees list</h3>
+
+<div>
+    <table id="EmployeesTable" class="table table-bordered">
+        <tr>
+            <th>Name</th>
+            <th>Date of Hire</th>
+            <th>Supervisor</th>
+        </tr>
+    </table>
+</div>
+
+<div>
+    <a href="createEmployee" id="addEmployee" class="btn btn-primary">Add</a>
+</div>
+
+
+
+@section scripts{ 
+    <script>
+
+        $(document).ready(function () {
+            var employeesTable = $("#EmployeesTable");
+            
+            $.ajax({
+                type: "Get",
+                url: "/api/Employees",
+                dataType: "json",
+                success: function (response) {
+                    console.log(response);
+                    for (var employee of response) {
+                        let template = `<tr>
+                                        <td>${employee.empName}</td>
+                                        <td>${pretierDateTime(employee.empDateOfHire)}</td>
+                                        <td>${showSupervisor(employee.employeeSupervisor)}</td>
+                                        <td><button class="updateEmployee btn btn-info" value="${employee.empId}">Update</button>
+                                        <button class="deleteEmployee btn btn-danger" value="${employee.empId}">Delete</button></td>
+                                        </tr>`;
+                        employeesTable.append(template);
+                    }
+                }
+
+            });
+
+            function showSupervisor(supervisorObj) {
+                if (supervisorObj)
+                    return supervisorObj.empName;
+                else
+                    return "<h4>Boss!</h4>"            
+            }
+
+            function pretierDateTime(empDatetime) {
+                return (new Date(empDatetime)).toLocaleDateString();
+            }
+
+            $(document).on("click", '.deleteEmployee', function () {
+                let name = $(this).parent().parent().find("td:first").text();
+                var confirmation = confirm(`Are you sure you want to delete ${name}`);
+                if (confirmation) {
+                    var idToDelete = $(this).val();
+                    var td = $(this).parent();
+                    $.ajax({
+                        type: "DELETE",
+                        url: `/api/Employees/deleteEmployee/${idToDelete}`
+                    })
+                        .done(function () {
+                            console.log("Delete done");
+                            let row = td.parent();
+                            row.remove();
+                        })
+                        .fail(function () {
+                            console.log("Delete failed");
+                        });
+                }
+            });
+
+            $(document).on("click", '.updateEmployee', function () {
+                let employeeId = $(this).val();
+                let url = `employeeDetails`;                                    
+                sessionStorage.setItem('employeeId', employeeId);
+                window.location.assign(url);
+            });
+        });
+
+    </script>
+} 

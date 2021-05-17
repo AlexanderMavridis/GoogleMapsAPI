@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Create Attribute";
+}
+
+
+<div>
+    <form id="attrFormToPost">
+        <div class="form-group">
+            <label for="attrName">Attribute name:</label>
+            <input type="text" id="attrName" name="attrName" value="" required>
+        </div>
+
+        <div class="form-group">
+            <label for="attrValue">Attribute value:</label>
+            <input type="text" id="attrValue" name="attrValue" value="" required>
+        </div>
+
+        <button class="btn btn-success">Save</button>
+    </form>
+</div>
+
+
+@section scripts{ 
+    <script>
+
+        $(document).ready(function () {
+
+            var attributeName = $("#attrName");
+            var attributeValue = $("#attrValue");
+
+            console.log("before submit");
+            var modelToPost = {};
+
+            $("#attrFormToPost").submit(function (e) {
+                e.preventDefault();
+
+                console.log(modelToPost);
+                modelToPost.attrName = attributeName.val();
+                modelToPost.attrValue = attributeValue.val();
+                
+                $.ajax({
+                    type: "POST",
+                    url: "/api/Attributes/newAttribute",
+                    headers: { 'Content-Type': 'application/json' },
+                    data: JSON.stringify(modelToPost)
+                })
+                    .done(function () {
+                        console.log("worked");
+                        window.location.assign("attributes");
+                    })
+                    .fail(function () {
+                        console.log("failed");
+                    });
+            });
+
+        });
+
+    </script>
+}

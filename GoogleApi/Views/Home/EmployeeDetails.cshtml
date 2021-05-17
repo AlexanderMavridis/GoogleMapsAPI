@@ -1,0 +1,206 @@
+﻿@{
+    ViewData["Title"] = "Update Employee";
+}
+
+<form id="newEmployee">
+    <div class="form-group">
+        <label class="" for="empName">Employee name:</label>
+        <input type="text" id="empName" name="empName" value="" required>
+    </div>
+
+    <div class="form-group">
+        <label for="empDateOfHire">Employee HireDate:</label>
+        <input type="datetime" id="empDateOfHire" name="empDateOfHire" value="" required>
+    </div>
+
+    <input type="hidden" id="employeeId" name="empId" value="">
+
+    <div>
+        <label for="ResidenceLat">Residence Latitude:</label>
+        <input type="text" id="ResidenceLat" name="ResidenceLat" value="" required/>
+    </div>
+
+    <div>
+        <label for="ResidenceLng">Residence Longitude:</label>
+        <input type="text" id="ResidenceLng" name="ResidenceLng" value="" required/>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="CarOwner" name="CarOwner" value="">
+        <label for="CarOwner">Car Owner</label>
+    </div>
+
+    <div id="attributes"></div>
+
+    <button class="btn btn-success">Save</button>
+</form>
+
+
+
+@section scripts {
+    <script>
+
+        $(document).ready(function () {
+            var employeeId = sessionStorage.getItem("employeeId");
+            sessionStorage.removeItem("employeeId");
+
+            var employeeName = $("#empName");
+            var dateOfHire = $("#empDateOfHire");
+            var empId = $("#employeeId");
+            var attributesSection = $("#attributes");
+            var CarOwner = $("#CarOwner");
+            var ResidenceLat = $("#ResidenceLat");
+            var ResidenceLng = $("#ResidenceLng");
+            var empAttributesList = [];
+            var objArray = [];  // stores attributes
+            var empSupervisorId;
+
+            $.ajax({
+                type: "Get",
+                url: "/api/Attributes",
+                dataType: "json",
+                async: false,
+                success: function (response) {
+                    for (var attribute of response) {
+
+                        let myobj = { attrName: attribute.attrName, attrId: attribute.attrId } 
+                        objArray.push(myobj);
+                        let template = `<input type="checkbox" id="${attribute.attrId}" name="empattr" value="${attribute.attrId}">
+                                                    <label for="empattr">Name : ${attribute.attrName} | Value : ${attribute.attrValue} </label><br>`;
+                        attributesSection.append(template);
+                    }
+                }
+            });
+
+            
+
+            $.ajax({
+                type: "Get",
+                url: `/api/Employees/employee/${employeeId}`,
+                dataType: "json",
+                async: false,
+                success: function (response) {
+                    console.log(response);
+                    //build the upcoming employee fields
+                    employeeName.val(response.empName);
+                    dateOfHire.val(new Date(response.empDateOfHire).toLocaleDateString()); 
+                    empId.val(response.empId);                    
+                    ResidenceLat.val(response.residenceLat);
+                    ResidenceLng.val(response.residenceLng);
+                    empSupervisorId = response.empSupervisorId;
+                    if (response.carOwner == true)
+                        CarOwner.attr('checked', true);
+
+                    for (var record of response.employeeAttributes) {
+                        empAttributesList.push(record.empattrAttributeId);
+                    }
+                }
+            });
+
+
+            $('input[type="checkbox"]').each(function () {
+                for (var attribute of empAttributesList) {
+                    if ($(this).val() == attribute) {
+                        $(this).prop('checked', true);
+                    }
+                }
+            });
+
+            console.log(objArray);
+
+            let employeeModel = {};
+            $("#newEmployee").submit(function (e) {
+                e.preventDefault();
+
+                employeeModel.empId = employeeId;
+                employeeModel.empDateOfHire = dateOfHire.val();
+                employeeModel.empName = employeeName.val();
+                employeeModel.empSupervisorId = empSupervisorId;
+
+                employeeModel.residenceLat = ResidenceLat.val();
+                employeeModel.residenceLng = ResidenceLng.val();
+
+                if (CarOwner.is(':checked'))
+                    employeeModel.CarOwner = 1;
+                else
+                    employeeModel.CarOwner = 0;
+
+                var arrayToCopy = [];
+
+                // Begin of client side validation for attribute name
+                
+                $('input[type="checkbox"]:checked:not("#CarOwner")').each(function () {
+                    if ($(this).is(':checked')) {
+                        let tempObj = { empattrAttributeId: $(this).val(), empattrEmployeeId: employeeId };
+                        arrayToCopy.push(tempObj);
+                        console.log(`checkbox value is ${tempObj.empattrAttributeId}`);
+                    }
+                });
+
+                var namesArray = [];
+                for (var obj of objArray) {
+                    for (var i = 0; i < arrayToCopy.length; i++) {
+                        if (obj.attrId == arrayToCopy[i].empattrAttributeId) {
+                            namesArray.push(obj.attrName);
+                        }
+                    }
+                }
+
+                if (namesArray != null) {
+                    namesArray.sort();
+                }
+
+                let ok = true;
+                for (var i = 0; i < namesArray.length; i++) {
+                    console.log("");
+                    console.log(namesArray[i]);
+                    if (namesArray[i] == namesArray[i+1]) {
+                        alert("You can not have twice or more of the same attribute!");
+                        ok = false;
+                        break;
+                    }
+                }
+                // End validation
+                
+                if (ok == true && namesArray != null) {
+                    employeeModel.employeeAttributes = arrayToCopy;
+                    console.log(employeeId);
+
+                    $.ajax({
+                        type: "Put",
+                        url: `/api/Employees/updateEmployee/${employeeId}`,
+                        headers: { 'Content-Type': 'application/json' },
+                        data: JSON.stringify(employeeModel)
+                    })
+                        .done(function () {
+                            console.log("employees update done");
+
+                            $.ajax({                                                        // is it better inside done() or then() ???
+                                type: "Put",
+                                url: "/api/Employees/updateEmployeesAttributes",
+                                headers: { 'Content-Type': 'application/json' },
+                                data: JSON.stringify(employeeModel)
+                            })
+                                .done(function () {
+                                    console.log("attributes update done");
+                                    window.location.assign("Employees");
+                                })
+                                .fail(function (e) {
+                                    console.log("attributes update failed");
+                                    console.log(employeeModel);
+                                    console.log(e);
+                                });
+                            
+                        })
+                        .fail(function (e) {
+                            console.log(e);
+                            alert("update failed, check your hiredate please!")
+                        });
+
+                    console.log(employeeModel);
+                }
+            });
+        });
+        
+    </script>
+}

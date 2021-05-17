@@ -1,0 +1,41 @@
+﻿@model IEnumerable<GoogleApi.Models.Attribute>
+
+@{
+    ViewData["Title"] = "GetAttributes";
+}
+
+<h1>GetAttributes</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.AttrName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AttrValue)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.AttrName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AttrValue)
+            </td>
+            <td>
+                <a class="btn btn-success" asp-action="Edit" asp-route-id="@item.AttrId">Edit</a> |
+                <a class="btn btn-info" asp-action="Details" asp-route-id="@item.AttrId">Details</a> |
+                <a class="btn btn-danger" asp-action="Delete" asp-route-id="@item.AttrId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
